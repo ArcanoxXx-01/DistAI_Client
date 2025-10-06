@@ -1,2 +1,3 @@
 # DistAI_Client
-DistIA Client, a distributed AI model training system
+
+DistIA Client, a distributed AI model training system.
