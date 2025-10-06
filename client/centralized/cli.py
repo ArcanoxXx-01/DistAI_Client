@@ -1,72 +1,84 @@
-import argparse, json
-from .http_client import HttpClient
+import sys
+import json
+from client.centralized.http_client import HttpClient
 
+def show_menu():
+    print("\n=== DistIA - Menú Principal ===")
+    print("1. Subir dataset")
+    print("2. Crear job de entrenamiento")
+    print("3. Ver estado de un job")
+    print("4. Listar jobs")
+    print("5. Descargar modelo")
+    print("6. Actualizar lista de servidores")
+    print("0. Salir")
+    return input("Selecciona una opción: ").strip()
 
-def build_parser():
-    p = argparse.ArgumentParser(
-        prog="client", description=" DistAI Client"
-    )
-    p.add_argument(
-        "--server",
-        required=False,
-        help="URL del servidor (opcional, si se quiere sobreescribir)",
-    )
-    p.add_argument("--token", required=False, help="Token de autenticación (opcional)")
-    sub = p.add_subparsers(dest="cmd")
+def run_cli():
+    try:
+        client = HttpClient()
+    except Exception as e:
+        print(f"Error al inicializar cliente: {e}")
+        sys.exit(1)
 
-    up = sub.add_parser("upload", help="Subir CSV")
-    up.add_argument("csv", help="Ruta al CSV")
-    up.add_argument("--name", help="Nombre del dataset")
+    while True:
+        option = show_menu()
 
-    cj = sub.add_parser("create-job", help="Crear job de entrenamiento")
-    cj.add_argument("--dataset-id", required=True)
-    cj.add_argument("--task", choices=["classification", "regression"], required=True)
-    cj.add_argument("--model", required=True)
-    cj.add_argument("--params", default="{}", help="JSON con parámetros")
+        if option == "1":
+            file_path = input("Ruta del dataset: ").strip()
+            name = input("Nombre (opcional): ").strip() or None
+            try:
+                result = client.upload_dataset(file_path, name)
+                print("✅ Dataset subido correctamente:")
+                print(json.dumps(result, indent=2))
+            except Exception as e:
+                print("❌ Error:", e)
 
-    st = sub.add_parser("status", help="Consultar estado de job")
-    st.add_argument("job_id")
+        elif option == "2":
+            dataset_id = input("ID del dataset: ").strip()
+            task = input("Tarea (ej: classification/regression): ").strip()
+            model = input("Modelo (ej: RandomForest, SVM): ").strip()
+            params = input("Parámetros JSON (opcional): ").strip()
+            try:
+                params_dict = json.loads(params) if params else {}
+                result = client.create_job(dataset_id, task, model, params_dict)
+                print("✅ Job creado:")
+                print(json.dumps(result, indent=2))
+            except Exception as e:
+                print("❌ Error:", e)
 
-    ls = sub.add_parser("list", help="Listar jobs")
-    ls.add_argument("--user-id", help="Filtrar por usuario (opcional)")
+        elif option == "3":
+            job_id = input("ID del job: ").strip()
+            try:
+                result = client.get_job_status(job_id)
+                print(json.dumps(result, indent=2))
+            except Exception as e:
+                print("❌ Error:", e)
 
-    dl = sub.add_parser("download", help="Descargar modelo")
-    dl.add_argument("job_id")
-    dl.add_argument("--output", help="Ruta de salida (opcional)")
+        elif option == "4":
+            user_id = input("User ID (opcional): ").strip() or None
+            try:
+                result = client.list_jobs(user_id)
+                print(json.dumps(result, indent=2))
+            except Exception as e:
+                print("❌ Error:", e)
 
-    return p
+        elif option == "5":
+            job_id = input("ID del job: ").strip()
+            output_path = input("Ruta de salida (opcional): ").strip() or None
+            try:
+                path = client.download_model(job_id, output_path)
+                print(f"✅ Modelo descargado en: {path}")
+            except Exception as e:
+                print("❌ Error:", e)
 
+        elif option == "6":
+            try:
+                client.update_server_list()
+            except Exception as e:
+                print("❌ Error:", e)
 
-def main():
-    parser = build_parser()
-    args = parser.parse_args()
-    client = HttpClient()
-    
-    # if override server/token
-    if getattr(args, "server", None):
-        client.server = args.server.rstrip("/")
-    if getattr(args, "token", None):
-        client.token = args.token
-
-    if args.cmd == "upload":
-        r = client.upload_dataset(args.csv, args.name)
-        print("Dataset subido:", r)
-    elif args.cmd == "create-job":
-        params = json.loads(args.params)
-        r = client.create_job(args.dataset_id, args.task, args.model, params)
-        print("Job creado:", r)
-    elif args.cmd == "status":
-        r = client.get_job_status(args.job_id)
-        print("Status:", r)
-    elif args.cmd == "list":
-        r = client.list_jobs(args.user_id)
-        print("Jobs:", r)
-    elif args.cmd == "download":
-        out = client.download_model(args.job_id, args.output)
-        print("Modelo guardado en:", out)
-    else:
-        parser.print_help()
-
-
-if __name__ == "__main__":
-    main()
+        elif option == "0":
+            print("👋 Saliendo...")
+            break
+        else:
+            print("Opción no válida. Intenta de nuevo.")
