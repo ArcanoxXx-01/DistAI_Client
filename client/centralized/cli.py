@@ -36,11 +36,11 @@ def run_cli():
         elif option == "2":
             dataset_id = input("ID del dataset: ").strip()
             task = input("Tarea (ej: classification/regression): ").strip()
-            model = input("Modelo (ej: RandomForest, SVM): ").strip()
+            models = input("Modelos (ej: LinearRegressor, KNNRegressor): ").strip().split(",")
             params = input("Parámetros JSON (opcional): ").strip()
             try:
                 params_dict = json.loads(params) if params else {}
-                result = client.create_job(dataset_id, task, model, params_dict)
+                result = client.create_job(dataset_id, task, models)
                 print("✅ Job creado:")
                 print(json.dumps(result, indent=2))
             except Exception as e:

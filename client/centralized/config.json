@@ -1,4 +1,5 @@
 {
   "token": "user1",
-  "servers": ["http://10.0.0.2:8000", "http://10.0.0.3:8000"]
+  "servers": ["http://10.0.0.2:8000", "http://10.0.0.3:8000"],
+  "api_url" : "api/v1/training/"
 }

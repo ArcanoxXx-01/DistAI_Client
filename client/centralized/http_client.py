@@ -63,40 +63,31 @@ class HttpClient(BaseClient):
                 return None
 
     def upload_dataset(self, file_path: str, name: str = None) -> Dict[str, Any]:
-        url = f"{self.server}/api/datasets/upload"
+        url = f"{self.server}{self.cfg['api_url']}dataset/upload"
         if not os.path.exists(file_path):
             raise FileNotFoundError(file_path)
-        files = {
-            "file": (os.path.basename(file_path), open(file_path, "rb"), "text/csv")
-        }
-        data = {"name": name or os.path.basename(file_path)}
-        r = requests.post(
-            url,
-            headers=self._headers(),
-            files=files,
-            data=data,
-            timeout=DEFAULT_TIMEOUT,
-        )
-        r.raise_for_status()
-        return r.json()
+
+        # Send only the 'file' key with the file object as the value.
+        # Using a context manager ensures the file is closed after the request.
+        with open(file_path, "rb") as fh:
+            files = {"file": fh}
+            r = requests.post(
+                url,
+                headers=self._headers(),
+                files=files,
+                timeout=DEFAULT_TIMEOUT,
+            )
+            r.raise_for_status()
+            return r.json()
 
     def create_job(
-        self,
-        dataset_id: str,
-        task: str,
-        model: str,
-        params: Dict[str, Any] = None,
-        train_test_split: float = 0.2,
-        seed: int = 42,
+        self, dataset_id: str, task: str, models: list[str]
     ) -> Dict[str, Any]:
-        url = f"{self.server}/api/jobs"
+        url = f"{self.server}{self.cfg['api_url']}train"
         payload = {
             "dataset_id": dataset_id,
-            "task": task,
-            "model": model,
-            "params": params or {},
-            "train_test_split": train_test_split,
-            "seed": seed,
+            "train_type": task,
+            "models": models,
         }
         r = requests.post(
             url,
@@ -108,7 +99,7 @@ class HttpClient(BaseClient):
         return r.json()
 
     def get_job_status(self, job_id: str) -> Dict[str, Any]:
-        url = f"{self.server}/api/jobs/{job_id}"
+        url = f"{self.server}{self.cfg['api_url']}train/{job_id}/status"
         r = requests.get(url, headers=self._headers(), timeout=DEFAULT_TIMEOUT)
         r.raise_for_status()
         return r.json()
