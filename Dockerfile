@@ -27,4 +27,4 @@ RUN pip install --upgrade pip && \
 USER appuser
 
 # Comando por defecto (ajústalo a tu script principal)
-CMD ["python", "src/client.py"]
+CMD ["python", "advertice run.py"]

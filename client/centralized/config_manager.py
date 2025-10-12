@@ -1,11 +1,14 @@
 import os, json
 
-CONFIG_PATH = os.path.expanduser("~/utils/config.json")
+CONFIG_PATH = os.path.expanduser("client/centralized/config.json")
 
 
 def load_config():
     if not os.path.exists(CONFIG_PATH):
-        return {"token": None, "servers": ["http://localhost:8000"]}
+        return {"token": None, 
+            "servers": ["http://localhost:8000"],
+            "api_url": "/api/v1/training/",
+            "time_out" : 10}
     with open(CONFIG_PATH, "r") as f:
         return json.load(f)
 

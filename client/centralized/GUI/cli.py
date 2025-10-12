@@ -2,16 +2,18 @@ import sys
 import json
 from client.centralized.http_client import HttpClient
 
+
 def show_menu():
     print("\n=== DistIA - Menú Principal ===")
     print("1. Subir dataset")
-    print("2. Crear job de entrenamiento")
-    print("3. Ver estado de un job")
-    print("4. Listar jobs")
-    print("5. Descargar modelo")
-    print("6. Actualizar lista de servidores")
+    print("2. Crear entrenamientos")
+    print("3. Ver estado de un entrenamiento")
+    # print("4. Listar jobs")
+    # print("5. Descargar modelo")
+    # print("6. Actualizar lista de servidores")
     print("0. Salir")
     return input("Selecciona una opción: ").strip()
+
 
 def run_cli():
     try:
@@ -36,10 +38,14 @@ def run_cli():
         elif option == "2":
             dataset_id = input("ID del dataset: ").strip()
             task = input("Tarea (ej: classification/regression): ").strip()
-            models = input("Modelos (ej: LinearRegressor, KNNRegressor): ").strip().split(",")
-            params = input("Parámetros JSON (opcional): ").strip()
+            models = (
+                input("Modelos (ej: LinearRegressor, KNNRegressor): ")
+                .strip()
+                .split(",")
+            )
+            # params = input("Parámetros JSON (opcional): ").strip()
             try:
-                params_dict = json.loads(params) if params else {}
+                # params_dict = json.loads(params) if params else {}
                 result = client.create_job(dataset_id, task, models)
                 print("✅ Job creado:")
                 print(json.dumps(result, indent=2))
@@ -49,33 +55,35 @@ def run_cli():
         elif option == "3":
             job_id = input("ID del job: ").strip()
             try:
-                result = client.get_job_status(job_id)
-                print(json.dumps(result, indent=2))
+                status = client.get_job_status(job_id)
+                print(json.dumps(status, indent=2))
+                results = client.get_results(job_id)
+                print("Metrics: ", json.dumps(results, indent=2))
             except Exception as e:
                 print("❌ Error:", e)
 
-        elif option == "4":
-            user_id = input("User ID (opcional): ").strip() or None
-            try:
-                result = client.list_jobs(user_id)
-                print(json.dumps(result, indent=2))
-            except Exception as e:
-                print("❌ Error:", e)
+        # elif option == "4":
+        #     user_id = input("User ID (opcional): ").strip() or None
+        #     try:
+        #         result = client.list_jobs(user_id)
+        #         print(json.dumps(result, indent=2))
+        #     except Exception as e:
+        #         print("❌ Error:", e)
 
-        elif option == "5":
-            job_id = input("ID del job: ").strip()
-            output_path = input("Ruta de salida (opcional): ").strip() or None
-            try:
-                path = client.download_model(job_id, output_path)
-                print(f"✅ Modelo descargado en: {path}")
-            except Exception as e:
-                print("❌ Error:", e)
+        # elif option == "5":
+        #     job_id = input("ID del job: ").strip()
+        #     output_path = input("Ruta de salida (opcional): ").strip() or None
+        #     try:
+        #         path = client.download_model(job_id, output_path)
+        #         print(f"✅ Modelo descargado en: {path}")
+        #     except Exception as e:
+        #         print("❌ Error:", e)
 
-        elif option == "6":
-            try:
-                client.update_server_list()
-            except Exception as e:
-                print("❌ Error:", e)
+        # elif option == "6":
+        #     try:
+        #         client.update_server_list()
+        #     except Exception as e:
+        #         print("❌ Error:", e)
 
         elif option == "0":
             print("👋 Saliendo...")
