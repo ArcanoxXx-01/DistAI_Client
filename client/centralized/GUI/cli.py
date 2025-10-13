@@ -16,9 +16,9 @@ class ClientGUI:
         try:
             self.client = HttpClient()
         except Exception as e:
-            print(f"Error al inicializar cliente: {e}")
+            print("Error al inicializar cliente: " + str(e))
             sys.exit(1)
-        # self.run()
+        self.run()
 
     def _show_menu(self):
         print("\n=== DistIA - Menú Principal ===")
@@ -42,7 +42,7 @@ class ClientGUI:
                     response = self.client.upload_dataset(file_path)
                     print("✅ Dataset subido correctamente:")
                     id = response.get("dataset_id")
-                    print(f"Id del dataset: {id}")
+                    print("Id del dataset: " + id)
                     self.datasets_id.append(id)
                 except Exception as e:
                     print("❌ Error:", e)
@@ -56,7 +56,7 @@ class ClientGUI:
                     response = self.client.create_job(dataset_id, task, models)
                     print("✅ Entrenamiento creado:")
                     id = response.get("training_id")
-                    print(f"Id del entrenamiento: {id}")
+                    print("Id del entrenamiento: " + id)
                     self.jobs_id.append(id)
                 except Exception as e:
                     print("❌ Error:", e)
@@ -74,7 +74,7 @@ class ClientGUI:
 
             # elif option == "4":
             #     try:
-                    # pass
+            # pass
             #     except Exception as e:
             #         print("❌ Error:", e)
 
@@ -104,16 +104,16 @@ class ClientGUI:
         for i in li:
             max_len = max(max_len, len(i))
         max_len = min(max_len, 10)
-
-        print(f"|{" "*(max_len+5)}| opt |")
+        f""
+        print("| opt |")
 
         for i in range(len(li)):
-            row = "| "
+            row = "|  {i}  | "
             l = len(li[i])
             if l > max_len:
-                row += f"{li[i][0:max_len]}... |  {i}  |"
+                row += li[i][0:max_len] + "... |"
             else:
-                row += f"{li[i]}{" "*(max_len-l+3)} |  {i}  |"
+                row += li[i] + " " * (max_len - l) + " |"
             print(row)
 
     def _insNumber(self, s: str) -> bool:
@@ -134,9 +134,7 @@ class ClientGUI:
             if self._insNumber(dataset_index):
                 dataset_index = int(dataset_index)
                 if dataset_index >= len(self.datasets_id):
-                    print(
-                        f"Seleccione una opcion válida (entre 0 y {len(self.datasets_id)-1})"
-                    )
+                    print("Seleccione una opcion válida")
                 else:
                     break
         return self.datasets_id[dataset_index]
@@ -193,18 +191,16 @@ class ClientGUI:
             if self._insNumber(job_index):
                 job_index = int(job_index)
                 if job_index >= len(self.jobs_id):
-                    print(
-                        f"Seleccione una opcion válida (entre 0 y {len(self.jobs_id)-1})"
-                    )
+                    print("Seleccione una opcion válida")
                 else:
                     break
         return self.jobs_id[job_index]
 
     def _print_results_single_model(self, model: dict):
-        print(f"Modelo: {model.get("model_name", "Nombre Desconocido")}\n")
+        print("Modelo: " + model.get("model_name", "Nombre Desconocido") + "\n")
         self._print_status(model.get("status", "unknown"))
         print("Métricas del modelo:\n", model.get("metrics", {}), "\n")
-        print(f"Errores {model.get("error","-")}\n")
+        print("Errores " + model.get("error", "-") + "\n")
 
     def _print_all_results(self, results: dict):
 
@@ -212,13 +208,13 @@ class ClientGUI:
         if len(id) > 10:
             id = id[0:10] + "..."
 
-        print(f"Resultados del entrenamiento {id} :\n")
-        print(f"Dataset id: {results.get("dataset_id"," ")[0:10]}...\n")
-        print(f"Tipo de entrenamiento: {results.get("train_type","~")}\n")
+        print("Resultados del entrenamiento " + id + ":\n")
+        print("Dataset id: " + results.get("dataset_id", " ")[0:10] + "...\n")
+        print("Tipo de entrenamiento: " + results.get("train_type", "~") + "\n")
         self._print_status(results.get("status", "unknown"))
-        print(f"Created at: {results.get("created_at")}")
-        print(f"Started at: {results.get("started_at", None)}")
-        print(f"Completed at: {results.get("completed_at", None)}")
+        print("Created at: " + results.get("created_at"))
+        print("Started at: " + results.get("started_at", None))
+        print("Completed at: " + results.get("completed_at", None))
         print("\nResultados y métricas de cada modelo:\n")
 
         for model in results.get("results", []):
@@ -237,4 +233,4 @@ class ClientGUI:
         else:
             s = "⚠️ Estado desconocido ⚠️"
 
-        print(f"Estado actual: {s}\n")
+        print("Estado actual: " + s + "\n")
