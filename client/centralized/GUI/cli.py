@@ -232,8 +232,8 @@ class ClientGUI:
         print("Tipo de entrenamiento: " + results.get("train_type", "~") + "\n")
         self._print_status(results.get("status", "unknown"))
         print("Created at: " + results.get("created_at"))
-        print("Started at: " + results.get("started_at", None))
-        print("Completed at: " + results.get("completed_at", None))
+        print("Started at: " + results.get("started_at", "unknown"))
+        print("Completed at: " + results.get("completed_at", "unknown"))
         print("\nResultados y métricas de cada modelo:\n")
 
         for model in results.get("results", []):
