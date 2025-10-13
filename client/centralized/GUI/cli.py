@@ -1,6 +1,7 @@
 from curses.ascii import isdigit
 import sys
 import json
+import time
 from client.centralized.http_client import HttpClient
 from threading import Thread
 
@@ -11,6 +12,8 @@ class ClientGUI:
         self.classification_models = []
         self.datasets_id = []
         self.tasks = ["regression", "classification"]
+        # thr_models = Thread(target=self.update_models, daemon=True)
+        # thr_models.start()
         self.jobs_id = []
         self.results = {}
         try:
@@ -25,7 +28,7 @@ class ClientGUI:
         print("1. Subir dataset")
         print("2. Crear entrenamiento")
         print("3. Ver estado de un entrenamiento")
-        print("4. Listar entrenamientos")
+        # print("4. Listar entrenamientos")
         # print("5. Descargar modelo")
         # print("6. Actualizar lista de servidores")
         print("0. Salir")
@@ -51,7 +54,7 @@ class ClientGUI:
             elif option == "2":
                 dataset_id = self._get_dataset_id()
                 task = self._get_task()
-                models = self._get_models()
+                models = self._get_models(task)
                 try:
                     response = self.client.create_job(dataset_id, task, models)
                     print("✅ Entrenamiento creado:")
@@ -105,10 +108,9 @@ class ClientGUI:
             max_len = max(max_len, len(i))
         max_len = min(max_len, 10)
         f""
-        print("| opt |")
 
         for i in range(len(li)):
-            row = "|  {i}  | "
+            row = "|  " + str(i) + "  | "
             l = len(li[i])
             if l > max_len:
                 row += li[i][0:max_len] + "... |"
@@ -155,6 +157,10 @@ class ClientGUI:
             if task == "regression"
             else self.classification_models
         )
+        try:
+            models = self.client.get_models(task).get("models", models)
+        except Exception as e:
+            print(e)
         self._print_list_option(models)
 
         print("\nSeleccione los modelos a entrenar (separados por espacios)\n")
@@ -178,6 +184,19 @@ class ClientGUI:
 
             if len(indexs) > 0:
                 return [models[ind] for ind in indexs]
+
+    def _update_models(self):
+        while True:
+            try:
+                response = self.client.get_models("regression")
+                self.regression_models = response.get("models", [])
+                response = self.client.get_models("classification")
+                self.classification_models = response.get("models", [])
+            except Exception as e:
+                pass
+            finally:
+                time.sleep(300)
+                # print("❌ Error al obtener modelos:", e)
 
     def _get_job_id(self):
         self._print_list_option(self.jobs_id)

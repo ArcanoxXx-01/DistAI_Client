@@ -138,3 +138,11 @@ class HttpClient(BaseClient):
             self.cfg["servers"] = nodes
             save_config(self.cfg)
             print("Lista de servidores actualizada:", nodes)
+
+    def get_models(self, model_type: str )-> Dict[str, Any]:
+        url = f"{self.server}/api/v1/training/models/{model_type}"
+        r = requests.get(
+            url, headers=self._headers(), timeout=self.cfg["time_out"]
+        )
+        r.raise_for_status()
+        return r.json()
