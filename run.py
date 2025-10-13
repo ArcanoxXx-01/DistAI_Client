@@ -1,4 +1,5 @@
-import client.centralized.GUI.cli as cli
+from client.centralized.GUI.cli import ClientGUI
 
 if __name__ == "__main__":
-    cli.run_cli()
+    c = ClientGUI()
+    c.client.server=""

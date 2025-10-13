@@ -62,7 +62,7 @@ class HttpClient(BaseClient):
                 print("No se pudo obtener token:", e)
                 return None
 
-    def upload_dataset(self, file_path: str, name: str = None) -> Dict[str, Any]:
+    def upload_dataset(self, file_path: str) -> Dict[str, Any]:
         url = f"{self.server}/api/v1/training/dataset/upload"
         if not os.path.exists(file_path):
             raise FileNotFoundError(file_path)
