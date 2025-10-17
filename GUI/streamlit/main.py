@@ -39,8 +39,8 @@ class ST_App:
             self.show_trainings_page()
         with Results_page:
             self.show_results_page()
-        # with Predicts_page:
-        #     self.show_predicts_page()
+        with Predicts_page:
+            self.show_predicts_page()
 
     def show_datasets_page(self):
         st.header("Uploaded Datasets")
@@ -134,42 +134,56 @@ class ST_App:
                     status_response = self.client.get_job_status(id)
                     status = status_response.get("status")
 
-                    st.write(f"Job Status: **{status}**")
-
                     if status == "completed":
-                        # Obtener resultados
-                        results = self.client.get_results(id)
 
-                        # Mostrar resultados
+                        results: dict = self.client.get_results(id)
+
                         if results:
-                            st.subheader("Training Results")
 
-                            # Mostrar métricas por modelo
-                            for model_name, metrics in results.items():
-                                with st.expander(f"Model: {model_name}"):
-                                    if isinstance(metrics, dict):
-                                        for metric, value in metrics.items():
-                                            st.write(f"{metric}: {value:.4f}")
-                                    else:
-                                        st.write(metrics)
+                            with st.container(border=True):
+                                st.subheader("Train Results:")
 
-                            # Botón para descargar modelo
-                            if st.button("Download Best Model"):
-                                try:
-                                    # Asumiendo que el primer modelo es el mejor por ahora
-                                    best_model = list(results.keys())[0]
-                                    output_path = self.client.download_model(id)
-                                    st.success(f"Model downloaded to: {output_path}")
-                                except Exception as e:
-                                    st.error(f"Error downloading model: {e}")
+                                col1, col2 = st.columns(2)
+
+                                with col1:
+                                    st.write(
+                                        f"**Created at :**  {results.get("created_at", "None")}"
+                                    )
+                                    st.write(
+                                        f"**Started at :**  {results.get("started_at", "None")}"
+                                    )
+                                    st.write(
+                                        f"**Completed at :**  {results.get("completed_at", "None")}"
+                                    )
+                                with col2:
+                                    st.write(
+                                        f"**Train Type :**  {results.get("train_type", "None")}"
+                                    )
+                                    st.write(
+                                        f"**Status :**  {results.get("status", "None")}"
+                                    )
+                                    st.write(
+                                        f"**Error :**  {results.get("error", "None")}"
+                                    )
+
+                                for model in results.get("results", []):
+                                    with st.expander(
+                                        f"Model: {model.get("model_name")}"
+                                    ):
+                                        metrics = (
+                                            model.get("metrics", {})
+                                            if isinstance(model, dict)
+                                            else {}
+                                        )
+                                        st.dataframe(metrics)
 
                     elif status == "failed":
-                        st.error("Job failed. Please check the server logs.")
+                        st.error("Train failed. Please check the server logs.")
                     else:
-                        st.info(f"Job is still running. Current status: {status}")
+                        st.info(f"Train is still running, Please wait ⏳")
 
                 except Exception as e:
-                    st.error(f"Error fetching results: {e}")
+                    st.error(f"⛔ Error fetching results: {e}")
 
     def show_predicts_page(self):
         st.header("Make Predictions")
@@ -177,8 +191,9 @@ class ST_App:
         col1, col2 = st.columns(2)
 
         with col1:
-            job_id = st.text_input("Job ID for Model")
-            model_name = st.text_input("Model Name")
+            id = st.selectbox("Train ID for Model", self.get_ids(self.trainings_path))
+            df = pd.read_csv(self.trainings_path)
+            model_name = st.selectbox("Model Name", df[df["id"] == id]["model"])
 
         with col2:
             uploaded_pred_file = st.file_uploader(
@@ -187,34 +202,27 @@ class ST_App:
 
         if (
             st.button("Generate Predictions")
-            and job_id
+            and id
             and model_name
             and uploaded_pred_file
         ):
             with st.spinner("Generating predictions..."):
                 try:
-                    # Guardar archivo temporalmente
                     temp_path = f"/tmp/pred_{uploaded_pred_file.name}"
                     with open(temp_path, "wb") as f:
                         f.write(uploaded_pred_file.getvalue())
 
-                    # Hacer predicción
-                    predictions = self.client.predict(job_id, model_name, temp_path)
+                    predictions = self.client.predict(id, model_name, temp_path)
 
-                    # Mostrar resultados de predicción
                     st.subheader("Prediction Results")
-
                     if isinstance(predictions, dict):
-                        # Si son métricas o resumen
                         for key, value in predictions.items():
-                            st.write(f"{key}: {value}")
+                            st.write(f"**{key}:** {value}")
                     else:
-                        # Si son las predicciones directamente
                         st.write(predictions)
 
-                    # Opción para descargar predicciones
                     if st.button("Download Predictions"):
-                        # Implementar descarga de predicciones
+                        # FALTA
                         pass
 
                 except Exception as e:
