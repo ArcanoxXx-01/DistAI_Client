@@ -2,8 +2,7 @@ from curses.ascii import isdigit
 import sys
 import json
 import time
-from client.centralized.http_client import HttpClient
-from threading import Thread
+from clients.centralized.http_client import HttpClient
 
 
 class ClientGUI:
@@ -12,8 +11,6 @@ class ClientGUI:
         self.classification_models = []
         self.datasets_id = []
         self.tasks = ["regression", "classification"]
-        # thr_models = Thread(target=self.update_models, daemon=True)
-        # thr_models.start()
         self.jobs_id = []
         self.results = {}
         try:

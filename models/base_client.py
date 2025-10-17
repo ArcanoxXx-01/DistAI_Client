@@ -3,7 +3,7 @@ from typing import Dict, Any, Optional
 
 
 class BaseClient(ABC):
-    """Base interface for DistIA clients"""
+    """Base interface for DML-Clients"""
 
     @abstractmethod
     def upload_dataset(self, file_path: str, name: str = None) -> Dict[str, Any]:
@@ -31,4 +31,8 @@ class BaseClient(ABC):
 
     @abstractmethod
     def download_model(self, job_id: str, output_path: str = None) -> str:
+        pass
+
+    @abstractmethod
+    def predict(self, job_id: str, model_name: str, dataset_path: str):
         pass

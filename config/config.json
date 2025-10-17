@@ -1,0 +1,22 @@
+{
+  "token": "user1",
+  "servers": [
+    "http://backend:8000",
+    "http://localhost:8000"
+  ],
+  "api_url": "/api/v1/training/",
+  "time_out": 10,
+
+  
+  "trainings_data_path": "data/tables/trainings.csv",
+  "datasets_data_path":  "data/tables/datasets.csv",
+  "results_data_path":   "data/tables/results.csv",
+  "predicts_data_path":  "data/tables/predicts.csv",
+  
+  "tasks" : ["regression", "classification"],
+  
+  "TITTLE": "DML",
+  "LAYOUT": "centered",
+  "ICON": "images/logo.png",
+  "SIDEBAR": "expanded"
+}

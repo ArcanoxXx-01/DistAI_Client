@@ -1,9 +1,0 @@
-{
-  "token": "user1",
-  "servers": [
-    "http://backend:8000",
-    "http://localhost:8000"
-  ],
-  "api_url": "/api/v1/training/",
-  "time_out": 10
-}

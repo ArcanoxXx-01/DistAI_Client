@@ -1,7 +1,7 @@
 import requests, os, json
 from typing import Dict, Any, Optional
-from client.base_client import BaseClient
-from client.centralized.config_manager import load_config, save_config
+from models.base_client import BaseClient
+from config.config_manager import load_config, save_config
 
 
 class HttpClient(BaseClient):
@@ -24,7 +24,7 @@ class HttpClient(BaseClient):
     def _discover_server(self) -> str:
 
         servers = self.cfg.get("servers", [])
-        return servers[0]
+        return servers[1]
         # for s in servers:
         #     try:
         #         r = requests.get(f"{s}/api/ping", timeout=self.cfg["time_out"])
@@ -139,10 +139,11 @@ class HttpClient(BaseClient):
             save_config(self.cfg)
             print("Lista de servidores actualizada:", nodes)
 
-    def get_models(self, model_type: str )-> Dict[str, Any]:
+    def get_models(self, model_type: str) -> Dict[str, Any]:
         url = f"{self.server}/api/v1/training/models/{model_type}"
-        r = requests.get(
-            url, headers=self._headers(), timeout=self.cfg["time_out"]
-        )
+        r = requests.get(url, headers=self._headers(), timeout=self.cfg["time_out"])
         r.raise_for_status()
         return r.json()
+
+    def predict(self, job_id, model_name, dataset_path):
+        return super().predict(job_id, model_name, dataset_path)
