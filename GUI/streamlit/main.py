@@ -10,12 +10,13 @@ class ST_App:
         try:
             self.client = HttpClient()
         except Exception as e:
-            print(f"Error al inicializar cliente: {e}")
-            sys.exit(1)
+            st.error(f"Error al inicializar cliente: {e}")
 
         self.tasks = self.client.cfg.get("tasks", ["classification", "regression"])
-        self.datasets_table_path: str = self.client.cfg.get("datasets_data_path")
-        self.trainings_table_path: str = self.client.cfg.get("trainings_data_path")
+        self.datasets_path: str = self.client.cfg.get("datasets_data_path")
+        self.trainings_path: str = self.client.cfg.get("trainings_data_path")
+        self.results_path: str = self.client.cfg.get("results_data_path")
+
         self.init_app()
 
     def init_app(self):
@@ -36,20 +37,17 @@ class ST_App:
             self.show_datasets_page()
         with Trainings_page:
             self.show_trainings_page()
-        # with Results_page:
-        #     self.show_results_page()
+        with Results_page:
+            self.show_results_page()
         # with Predicts_page:
         #     self.show_predicts_page()
 
     def show_datasets_page(self):
-
         st.header("Uploaded Datasets")
-        self.show_table(self.datasets_table_path)
-
+        self.show_table(self.datasets_path)
         with st.expander("Upload New Dataset", expanded=False):
             uploaded_file = st.file_uploader("Choose a CSV file", type="csv")
             dataset_name = st.text_input("Dataset Name", value="My Dataset")
-
             if (
                 st.button("Upload Dataset")
                 and uploaded_file is not None
@@ -61,30 +59,25 @@ class ST_App:
                         with open(temp_path, "wb") as f:
                             f.write(uploaded_file.getvalue())
                             f.close()
-
                         response = self.client.upload_dataset(temp_path)
                         id = response.get("dataset_id")
-
-                        self.add_row(self.datasets_table_path, f"\n{id},{dataset_name}")
-
+                        self.add_row(self.datasets_path, f"\n{id},{dataset_name}")
                         st.success(f"Dataset uploaded successfully! ID: {id}")
-
                     except Exception as e:
                         st.error(f"Error uploading dataset: {e}")
                     finally:
                         st.rerun()
 
     def show_trainings_page(self):
-        st.header("Training Jobs")
-        self.show_table(self.trainings_table_path)
-
-        with st.expander("Create New Training Job", expanded=False):
+        st.header("Trainings:")
+        self.show_table(self.trainings_path)
+        with st.expander("Create New Training", expanded=False) as pannel:
             col1, col2 = st.columns(2)
-
             with col1:
-                dataset_id = st.text_input("Dataset ID")
+                dataset_id = st.selectbox(
+                    "Dataset Id", self.get_ids(self.datasets_path)
+                )
                 task = st.selectbox("Task Type", self.tasks)
-
             with col2:
                 try:
                     models_response = self.client.get_models(task)
@@ -97,9 +90,6 @@ class ST_App:
                 except Exception as e:
                     st.error(f"Error loading models: {e}")
                     selected_models = []
-
-                # seed = st.number_input("Random Seed", value=42)
-
             if st.button("Start Training") and dataset_id and selected_models and task:
                 with st.spinner("Creating training job..."):
                     try:
@@ -108,42 +98,47 @@ class ST_App:
                             task=task,
                             models=selected_models,
                         )
-
                         id = response.get("training_id")
                         st.success(f"Training job created! Job ID: {id}")
-
+                        row = ""
+                        status = self.client.get_job_status(id).get("status", "unknown")
+                        for model in selected_models:
+                            row += f"\n{id},{task},{model},{status}"
+                        self.add_row(self.trainings_path, row)
                     except Exception as e:
                         st.error(f"Error creating training job: {e}")
-
-        # Lista de trabajos
-        st.subheader("Training Jobs")
-        if st.button("Refresh Jobs"):
-            self.jobs_id = self.load_jobs()
-
-        if self.jobs_id:
-            jobs_df = pd.DataFrame(self.jobs_id)
-            st.dataframe(jobs_df)
-        else:
-            st.info("No training jobs found")
+                    finally:
+                        st.rerun()
+        if st.button("Refresh Status"):
+            try:
+                status = {}
+                for id in self.get_ids(self.trainings_path):
+                    response = self.client.get_job_status(id)["status"]
+                    status[id] = response
+                df = pd.DataFrame(pd.read_csv(self.trainings_path))
+                df["status"] = df["id"].map(status)
+                df.to_csv(self.trainings_path, index=False)
+            except Exception as e:
+                st.error(f"Error updating Status: {e}")
+            finally:
+                st.rerun()
 
     def show_results_page(self):
         st.header("Training Results")
 
-        # Seleccionar job para ver resultados
-        job_id = st.text_input("Enter Job ID to view results")
+        id = st.selectbox("Training Id", self.get_ids(self.trainings_path))
 
-        if job_id and st.button("Get Results"):
+        if id and st.button("Get Results"):
             with st.spinner("Fetching results..."):
                 try:
-                    # Primero verificar estado
-                    status_response = self.client.get_job_status(job_id)
+                    status_response = self.client.get_job_status(id)
                     status = status_response.get("status")
 
                     st.write(f"Job Status: **{status}**")
 
                     if status == "completed":
                         # Obtener resultados
-                        results = self.client.get_results(job_id)
+                        results = self.client.get_results(id)
 
                         # Mostrar resultados
                         if results:
@@ -163,7 +158,7 @@ class ST_App:
                                 try:
                                     # Asumiendo que el primer modelo es el mejor por ahora
                                     best_model = list(results.keys())[0]
-                                    output_path = self.client.download_model(job_id)
+                                    output_path = self.client.download_model(id)
                                     st.success(f"Model downloaded to: {output_path}")
                                 except Exception as e:
                                     st.error(f"Error downloading model: {e}")
@@ -225,61 +220,15 @@ class ST_App:
                 except Exception as e:
                     st.error(f"Error generating predictions: {e}")
 
-    def upload_dataset(self, file_path: str, name: str = None):
-        return self.client.upload_dataset(file_path, name)
-
-    def create_job(
-        self,
-        dataset_id: str,
-        task: str,
-        models: list = [],
-        params=None,
-        train_test_split: float = 0.2,
-        seed: int = 42,
-    ):
-        return self.client.create_job(
-            dataset_id, task, models, params, train_test_split, seed
-        )
-
-    def get_job_status(self, job_id: str):
-        return self.client.get_job_status(job_id)
-
-    def list_jobs(self, user_id: str = None):
-        return self.client.list_jobs(user_id)
-
-    def download_model(self, job_id: str, output_path: str = None) -> str:
-        return self.client.download_model(job_id, output_path)
-
-    def predict(self, job_id: str, model_name: str, dataset_path: str):
-        return self.client.predict(job_id, model_name, dataset_path)
-
-    def load_datasets(self):
-        """Cargar datasets desde el servidor"""
-        try:
-            # Nota: Necesitarías agregar un endpoint para listar datasets en tu API
-            # Por ahora, asumiremos que tenemos una lista local o usaremos otra estrategia
-            return []
-        except Exception as e:
-            st.error(f"Error cargando datasets: {e}")
-            return []
-
-    def load_jobs(self):
-        """Cargar trabajos desde el servidor"""
-        try:
-            response = self.client.list_jobs()
-            return response.get("jobs", [])
-        except Exception as e:
-            st.error(f"Error cargando trabajos: {e}")
-            return []
-
     def show_table(self, path):
         data = pd.read_csv(path)
         df = pd.DataFrame(data)
         st.dataframe(df)
 
-    def add_row(self, path , row: str):
-        with open(path, "a") as f:
-            f.wrtie(f"\n{row}")
-            f.close()
-            
-            
+    def add_row(self, path, row: str):
+        with open(path, "a") as f2:
+            f2.write(f"\n{row}")
+            f2.close()
+
+    def get_ids(self, path):
+        return pd.DataFrame(pd.read_csv(path))["id"].unique()
